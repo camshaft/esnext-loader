@@ -33,6 +33,22 @@ function es6ModuleTranspiler(source, options, filename) {
     var ext = path.extname(filename);
 
     var moduleName = path.join(path.dirname(filename), path.basename(filename, ext)).replace(/[\\]/g, '/');
-    var compiler = new es6mod(source, moduleName, options);
-    return compiler.toCJS();
+    try {
+        var compiler = new es6mod(source, moduleName, options);
+        return compiler.toCJS();
+    } catch (e) {
+        if (!e.lineNumber) throw e;
+        var lines = source.split('\n');
+        var l = e.lineNumber;
+        var pre = lines.slice(l - 5, l + 1);
+        var post = lines.slice(l + 1, l + 5);
+        throw new Error(e.message + ' in file: ' + filename + '\n' +
+                        pre.join('\n') +
+                        goToCol(e.column) +
+                        post.join('\n'));
+    }
+}
+
+function goToCol(num) {
+    return (new Array(num)).join(' ') + '^\n';
 }
